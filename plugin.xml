@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            objectClass="org.eclipse.ui.IEditorInput"
+            id="com.br.terra.reading.dcl.contribution1">
+         <menu
+               label="ArchKDM"
+               path="additions"
+               id="com.br.terra.reading.dcl.menu1">
+            <separator
+                  name="group1">
+            </separator>
+         </menu>
+         <action
+               label="Create Architecture TOBE"
+               class="com.br.terra.reading.dcl.popup.actions.ReadinDSLVIew"
+               menubarPath="com.br.terra.reading.dcl.menu1/group1"
+               enablesFor="1"
+               id="com.br.terra.reading.dcl.newAction">
+         </action>
+      </objectContribution>
+   </extension>
+
+</plugin>
