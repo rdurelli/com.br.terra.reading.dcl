@@ -1,8 +1,11 @@
 package com.br.terra.reading.dcl.popup.actions;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
@@ -12,30 +15,21 @@ import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
-import org.eclipse.gmt.modisco.omg.kdm.action.AbstractActionRelationship;
 import org.eclipse.gmt.modisco.omg.kdm.action.ActionElement;
 import org.eclipse.gmt.modisco.omg.kdm.action.ActionFactory;
-import org.eclipse.gmt.modisco.omg.kdm.action.ActionPackage;
 import org.eclipse.gmt.modisco.omg.kdm.action.Calls;
 import org.eclipse.gmt.modisco.omg.kdm.action.Creates;
 import org.eclipse.gmt.modisco.omg.kdm.action.UsesType;
 import org.eclipse.gmt.modisco.omg.kdm.code.CodeElement;
 import org.eclipse.gmt.modisco.omg.kdm.code.CodeFactory;
 import org.eclipse.gmt.modisco.omg.kdm.code.CodeModel;
-import org.eclipse.gmt.modisco.omg.kdm.code.ControlElement;
-import org.eclipse.gmt.modisco.omg.kdm.code.Datatype;
 import org.eclipse.gmt.modisco.omg.kdm.code.Extends;
 import org.eclipse.gmt.modisco.omg.kdm.code.HasValue;
 import org.eclipse.gmt.modisco.omg.kdm.code.Implements;
 import org.eclipse.gmt.modisco.omg.kdm.code.Module;
-import org.eclipse.gmt.modisco.omg.kdm.code.util.CodeAdapterFactory;
 import org.eclipse.gmt.modisco.omg.kdm.core.AggregatedRelationship;
 import org.eclipse.gmt.modisco.omg.kdm.core.CoreFactory;
-import org.eclipse.gmt.modisco.omg.kdm.core.KDMEntity;
 import org.eclipse.gmt.modisco.omg.kdm.core.KDMRelationship;
-import org.eclipse.gmt.modisco.omg.kdm.core.ModelElement;
-import org.eclipse.gmt.modisco.omg.kdm.kdm.KDMFramework;
-import org.eclipse.gmt.modisco.omg.kdm.kdm.KDMModel;
 import org.eclipse.gmt.modisco.omg.kdm.kdm.KdmFactory;
 import org.eclipse.gmt.modisco.omg.kdm.kdm.KdmPackage;
 import org.eclipse.gmt.modisco.omg.kdm.kdm.Segment;
@@ -43,16 +37,14 @@ import org.eclipse.gmt.modisco.omg.kdm.structure.AbstractStructureElement;
 import org.eclipse.gmt.modisco.omg.kdm.structure.ArchitectureView;
 import org.eclipse.gmt.modisco.omg.kdm.structure.Component;
 import org.eclipse.gmt.modisco.omg.kdm.structure.Layer;
-import org.eclipse.gmt.modisco.omg.kdm.structure.SoftwareSystem;
-import org.eclipse.gmt.modisco.omg.kdm.structure.StructureElement;
 import org.eclipse.gmt.modisco.omg.kdm.structure.StructureFactory;
 import org.eclipse.gmt.modisco.omg.kdm.structure.StructureModel;
 import org.eclipse.gmt.modisco.omg.kdm.structure.Subsystem;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IActionDelegate;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IFileEditorInput;
@@ -64,12 +56,11 @@ import org.eclipse.xtext.resource.XtextResourceSet;
 
 import com.br.terra.dcl.DCLStandaloneSetup;
 import com.br.terra.dcl.dCL.BasicType;
-import com.br.terra.dcl.dCL.Can;
 import com.br.terra.dcl.dCL.DCDecl;
-import com.br.terra.dcl.dCL.DCLArchitectureView;
 import com.br.terra.dcl.dCL.DCLComponent;
+import com.br.terra.dcl.dCL.DCLComponentInterface;
 import com.br.terra.dcl.dCL.DCLLayer;
-import com.br.terra.dcl.dCL.DCLSoftwareSystem;
+import com.br.terra.dcl.dCL.DCLModule;
 import com.br.terra.dcl.dCL.DCLStructureElement;
 import com.br.terra.dcl.dCL.DCLSubSystem;
 import com.br.terra.dcl.dCL.ElementType;
@@ -84,6 +75,10 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 	private IFile file;
 	
 	private Segment segment;
+	
+	private ArrayList<DCLLayer> allDclLayers = new ArrayList<DCLLayer>(); 
+	
+	ArrayList<AbstractStructureElement> allAbstractStructureElements = new ArrayList<AbstractStructureElement>();
 	
 	/**
 	 * Constructor for Action1.
@@ -108,11 +103,15 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 		
 		if (iEditorSite != null) {
 			
+			
+			System.out.println("entrou");
 			// get selection provider
 			ISelectionProvider selectionProvider = iEditorSite
 					.getSelectionProvider();
 
 			if (selectionProvider != null) {
+				
+				System.out.println("entrou2");
 				
 				IFileEditorInput input = (IFileEditorInput) editorPart
 						.getEditorInput();
@@ -123,7 +122,8 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 				
 				System.out.println(dclFileTOBE);
 				
-				new org.eclipse.emf.mwe.utils.StandaloneSetup().setPlatformUri("../");
+				//trava aqui
+			//	new org.eclipse.emf.mwe.utils.StandaloneSetup().setPlatformUri("../"); pra que serve isso mesmo? hauihaiuhiua
 				Injector injector = new DCLStandaloneSetup().createInjectorAndDoEMFRegistration();
 				
 				XtextResourceSet resourceSet = injector.getInstance(XtextResourceSet.class);
@@ -138,14 +138,25 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 				
 				StructureModel structureModel = (StructureModel) this.segment.getModel().get(0); 
 								
-				structureModel.getStructureElement().addAll(this.getCorrectStructuredElement(allStructureElements));
+				structureModel.getStructureElement().addAll(this.setCorrectStructuredElement(allStructureElements));
 				
-				EList<DCDecl> DCdecl = model.getDCDecl();
+				EList<DCDecl> DCdecl = model.getDCDecl();		
 				
-				this.createRestrictionToBeRepresentedInKDM(structureModel.getStructureElement(), DCdecl);
+				EList<AbstractStructureElement> auxList = structureModel.getStructureElement();
+				
+				for (AbstractStructureElement abstractStructureElement : auxList) {
+					
+					this.allAbstractStructureElements.add(abstractStructureElement);
+					
+				}
+				
+				createRestrictionToLayers();
+				
+				//this.createRestrictionToBeRepresentedInKDM(this.allAbstractStructureElements, DCdecl);
 				
 						
-				String path =  "file:/Users/rafaeldurelli/Documents/runtime-EclipseApplication/University/src/com/br/Examples/TOBE_KDM.xmi";
+				//String path =  "file:/Users/rafaeldurelli/Documents/runtime-EclipseApplication/University/src/com/br/Examples/TOBE_KDM.xmi";
+				String path =  "file:C:/Users/Fernando/Documents/runtime-EclipseApplication/TesteModisco/Examples/TOBE_KDM.xmi";
 				
 				
 				System.out.println(path);
@@ -200,14 +211,18 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 	}
 	
 	
-	private ArrayList<AbstractStructureElement> getCorrectStructuredElement (EList<DCLStructureElement> allStructureElements) {
+	private ArrayList<AbstractStructureElement> setCorrectStructuredElement (EList<DCLStructureElement> allStructureElements) {
 		
-		ArrayList<AbstractStructureElement> allAbstractStructureElements = new ArrayList<AbstractStructureElement>();
+		
+		System.err.println("entrou3");
 		
 		for (DCLStructureElement dclStructureElement : allStructureElements) {
 			if (dclStructureElement instanceof DCLLayer) {
 				Layer layer = StructureFactory.eINSTANCE.createLayer();
 				layer.setName(dclStructureElement.getName());
+				
+				this.allDclLayers.add((DCLLayer)dclStructureElement);
+				
 				allAbstractStructureElements.add(layer);
 			}
 			else if (dclStructureElement instanceof DCLComponent) {
@@ -218,24 +233,110 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 				Subsystem subSystem = StructureFactory.eINSTANCE.createSubsystem();
 				subSystem.setName(dclStructureElement.getName());
 				allAbstractStructureElements.add(subSystem);
-			} else if (dclStructureElement instanceof DCLArchitectureView) {
+			} else if (dclStructureElement instanceof DCLModule) {
 				ArchitectureView architectureView = StructureFactory.eINSTANCE.createArchitectureView();
 				architectureView.setName(dclStructureElement.getName());
 				allAbstractStructureElements.add(architectureView);
-			} else if (dclStructureElement instanceof DCLSoftwareSystem) {
-				SoftwareSystem softwareSystem = StructureFactory.eINSTANCE.createSoftwareSystem();
-				allAbstractStructureElements.add(softwareSystem);
-			}
-		}
+			} else if (dclStructureElement instanceof DCLComponentInterface) {
+				//TODO 
+			}			
+			
+		}				
+		
 		return allAbstractStructureElements;
 	}
 	
+	private void createRestrictionToLayers () {
+		
+		System.err.println("entrou4");
+		
+		for (int i = 0; i < this.allDclLayers.size(); i++) {
+			
+			//busca as layers 2, 3 e cria os relacionamento....
+			if (this.allDclLayers.get(i).getLevel() > 1) {
+				
+				//quando encontrar o desejado, busca o anterior para criar os relacionamentos
+				for (DCLLayer dclLayer : allDclLayers) {
+					
+					if (dclLayer.getLevel() == (this.allDclLayers.get(i).getLevel()-1)) {
+						
+						//busca o elemento estrutural descrito na restricao
+						AbstractStructureElement from = this.getToORFrom(this.allDclLayers.get(i).getName(), allAbstractStructureElements);
+						AbstractStructureElement to = this.getToORFrom(dclLayer.getName(), allAbstractStructureElements);
+						
+						ArrayList<KDMRelationship> lisfOfRelationshipsToAdd = createActionsExamples();
+						
+						searchAndCreateStructureElement(from, to, lisfOfRelationshipsToAdd);						
+					}
+					
+				}
+				
+			}
+			
+		}
+		
+	}
 	
-	private void createRestrictionToBeRepresentedInKDM (EList<AbstractStructureElement> allAbstractStructureElements, EList<DCDecl> dcDecl) {
+	
+	private ArrayList<KDMRelationship> createActionsExamples () {
+		ArrayList<KDMRelationship> lisfOfRelationshipsToAdd = new ArrayList<KDMRelationship>();
+		
+		CodeModel elements = CodeFactory.eINSTANCE.createCodeModel(); 
+		
+		elements.setName("Elements Instances");
+		
+		this.segment.getModel().add(elements);
+		
+		Module module = CodeFactory.eINSTANCE.createModule();
+		
+		module.setName("Module Instance");
+		
+		elements.getCodeElement().add(module);
+		
+		ActionElement actionElement = ActionFactory.eINSTANCE.createActionElement();
+		
+		actionElement.setName("actionElement Instance");
+		
+		CodeElement codeElement = CodeFactory.eINSTANCE.createCodeElement();
+		
+		codeElement.setName("codeElement Instance");
+		
+		module.getCodeElement().add(codeElement);
+		
+		module.getCodeElement().add(actionElement);
+		
+		Calls relation = ActionFactory.eINSTANCE.createCalls();
+		lisfOfRelationshipsToAdd.add(relation);												
+		actionElement.getActionRelation().add(relation);
+		
+		UsesType relation2 = ActionFactory.eINSTANCE.createUsesType();
+		lisfOfRelationshipsToAdd.add(relation2);
+		actionElement.getActionRelation().add(relation2);
+		
+		Creates relation3 = ActionFactory.eINSTANCE.createCreates();
+		lisfOfRelationshipsToAdd.add(relation3);
+		actionElement.getActionRelation().add(relation3);
+		
+		Extends relation4 = CodeFactory.eINSTANCE.createExtends();
+		lisfOfRelationshipsToAdd.add(relation4);
+		codeElement.getCodeRelation().add(relation4);
+		
+		Implements relation5 = CodeFactory.eINSTANCE.createImplements();
+		lisfOfRelationshipsToAdd.add(relation5);
+		codeElement.getCodeRelation().add(relation5);
+		
+		HasValue relation6 = CodeFactory.eINSTANCE.createHasValue();
+		lisfOfRelationshipsToAdd.add(relation6);
+		codeElement.getCodeRelation().add(relation6);
+	
+		return lisfOfRelationshipsToAdd;
+	}
+	
+	private void createRestrictionToBeRepresentedInKDM (ArrayList<AbstractStructureElement> allAbstractStructureElements, EList<DCDecl> dcDecl) {
 		
 		String dependence = null;
 		
-		KDMRelationship abstractRelationship = null;
+		ArrayList<KDMRelationship> lisfOfRelationshipsToAdd = new ArrayList<KDMRelationship>();
 		
 		CodeModel elements = CodeFactory.eINSTANCE.createCodeModel(); 
 		
@@ -266,6 +367,7 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 			String structureElementNameTO = restrictions.getType().getName();
 			String structureElementNameFROM = restrictions.getT().getName();
 		
+			//busca o elemento estrutural descrito na restricao
 			AbstractStructureElement from = this.getToORFrom(structureElementNameFROM, allAbstractStructureElements);
 			AbstractStructureElement to = this.getToORFrom(structureElementNameTO, allAbstractStructureElements);
 			
@@ -283,37 +385,74 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 			
 			if (dependence.equals("access")) {			
 				Calls relation = ActionFactory.eINSTANCE.createCalls();
-				abstractRelationship = relation;							
+				lisfOfRelationshipsToAdd.add(relation);												
 				actionElement.getActionRelation().add(relation);
 			} else if (dependence.equals("declare")) {
 				UsesType relation = ActionFactory.eINSTANCE.createUsesType();
-				abstractRelationship = relation;
+				lisfOfRelationshipsToAdd.add(relation);
 				actionElement.getActionRelation().add(relation);
 			} else if (dependence.equals("create")) {
 				Creates relation = ActionFactory.eINSTANCE.createCreates();
-				abstractRelationship = relation;
+				lisfOfRelationshipsToAdd.add(relation);
 				actionElement.getActionRelation().add(relation);
 			} else if (dependence.equals("handle")) {
-				//TODO
+				//Access + Declare
+				Calls relation = ActionFactory.eINSTANCE.createCalls();
+				lisfOfRelationshipsToAdd.add(relation);							
+				actionElement.getActionRelation().add(relation);
+				
+				UsesType relation2 = ActionFactory.eINSTANCE.createUsesType();
+				lisfOfRelationshipsToAdd.add(relation2);
+				actionElement.getActionRelation().add(relation2);
 			} else if (dependence.equals("depend")) {
-				//TODO
+				//TODOS
+				Calls relation = ActionFactory.eINSTANCE.createCalls();
+				lisfOfRelationshipsToAdd.add(relation);							
+				actionElement.getActionRelation().add(relation);
+				
+				UsesType relation2 = ActionFactory.eINSTANCE.createUsesType();
+				lisfOfRelationshipsToAdd.add(relation2);
+				actionElement.getActionRelation().add(relation2);
+				
+				Creates relation3 = ActionFactory.eINSTANCE.createCreates();
+				lisfOfRelationshipsToAdd.add(relation3);
+				actionElement.getActionRelation().add(relation3);
+				
+				Extends relation4 = CodeFactory.eINSTANCE.createExtends();
+				lisfOfRelationshipsToAdd.add(relation4);
+				codeElement.getCodeRelation().add(relation4);
+				
+				Implements relation5 = CodeFactory.eINSTANCE.createImplements();
+				lisfOfRelationshipsToAdd.add(relation5);
+				codeElement.getCodeRelation().add(relation5);
+				
+				HasValue relation6 = CodeFactory.eINSTANCE.createHasValue();
+				lisfOfRelationshipsToAdd.add(relation6);
+				codeElement.getCodeRelation().add(relation6);
 			} else if (dependence.equals("extend")) {
 				Extends relation = CodeFactory.eINSTANCE.createExtends();
-				abstractRelationship = relation;
+				lisfOfRelationshipsToAdd.add(relation);
 				codeElement.getCodeRelation().add(relation);
 			} else if (dependence.equals("implement")) {
 				Implements relation = CodeFactory.eINSTANCE.createImplements();
-				abstractRelationship = relation;
+				lisfOfRelationshipsToAdd.add(relation);
 				codeElement.getCodeRelation().add(relation);
 			} else if (dependence.equals("derive")) {
-				//TODO
+				//Extend + Implement
+				Extends relation = CodeFactory.eINSTANCE.createExtends();
+				lisfOfRelationshipsToAdd.add(relation);
+				codeElement.getCodeRelation().add(relation);
+				
+				Implements relation2 = CodeFactory.eINSTANCE.createImplements();
+				lisfOfRelationshipsToAdd.add(relation2);
+				codeElement.getCodeRelation().add(relation2);
 			} else if (dependence.equals("throw")) {
 				Calls relation = ActionFactory.eINSTANCE.createCalls();
-				abstractRelationship = relation;
+				lisfOfRelationshipsToAdd.add(relation);
 				actionElement.getActionRelation().add(relation);
 			} else if (dependence.equals("annotated")) {
 				HasValue relation = CodeFactory.eINSTANCE.createHasValue();
-				abstractRelationship = relation;
+				lisfOfRelationshipsToAdd.add(relation);
 				codeElement.getCodeRelation().add(relation);
 			}
 			
@@ -329,15 +468,15 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 				//TODO
 			} else {
 				
-				System.out.println(abstractRelationship);
+				//System.out.println(abstractRelationship);
 				
-				searchStructureElement(from, to, abstractRelationship);
+				searchAndCreateStructureElement(from, to, lisfOfRelationshipsToAdd);
 			}
 		}
 		
 	}
 	
-	private void searchStructureElement (AbstractStructureElement from, AbstractStructureElement to, KDMRelationship relation) {
+	private void searchAndCreateStructureElement (AbstractStructureElement from, AbstractStructureElement to, ArrayList<KDMRelationship> relations) {
 							
 		
 		if (from.getAggregated().size() > 0) {
@@ -353,8 +492,8 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 					
 					//ADICIONAR
 					
-					aggregatedFROM.get(i).setDensity(aggregatedFROM.get(i).getDensity()+1);
-					aggregatedFROM.get(i).getRelation().add(relation);
+					aggregatedFROM.get(i).setDensity(aggregatedFROM.get(i).getDensity()+relations.size());
+					aggregatedFROM.get(i).getRelation().addAll(relations);
 					
 					break;
 				}
@@ -363,10 +502,10 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 				if (i == (aggregatedFROM.size()-1)) {
 					
 					AggregatedRelationship newRelationship = CoreFactory.eINSTANCE.createAggregatedRelationship();
-					newRelationship.setDensity(1);
+					newRelationship.setDensity(relations.size());
 					newRelationship.setFrom(from);
 					newRelationship.setTo(to);
-					newRelationship.getRelation().add(relation);
+					newRelationship.getRelation().addAll(relations);
 					from.getAggregated().add(newRelationship);
 					break;
 					
@@ -377,16 +516,16 @@ public class ReadinDSLVIew implements IObjectActionDelegate {
 			
 		} else {
 			AggregatedRelationship newRelationship = CoreFactory.eINSTANCE.createAggregatedRelationship();
-			newRelationship.setDensity(1);
+			newRelationship.setDensity(relations.size());
 			newRelationship.setFrom(from);
 			newRelationship.setTo(to);
-			newRelationship.getRelation().add(relation);
+			newRelationship.getRelation().addAll(relations);
 			from.getAggregated().add(newRelationship);
 		}
 		
 	}
 	
-	private AbstractStructureElement getToORFrom (String elementToFind, EList<AbstractStructureElement> allAbstractStructureElements) {
+	private AbstractStructureElement getToORFrom (String elementToFind, ArrayList<AbstractStructureElement> allAbstractStructureElements) {
 		
 		for (AbstractStructureElement abstractStructureElement : allAbstractStructureElements) {
 			if (abstractStructureElement.getName().equals(elementToFind)) {
